@@ -1,0 +1,71 @@
+/* Scyther script for modeling AES encryption */
+
+/* Define the protocol roles */
+protocol AESProtocol
+{
+    /* Client role */
+    role Client
+    {
+        /* Declare variables */
+        var 
+            key : SymmetricKey;   /* Symmetric key for AES */
+            plaintext : Text;      /* Plaintext message */
+            ciphertext : Text;     /* Ciphertext after encryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate a new symmetric key and plaintext */
+            key := new();
+            plaintext := new();
+        }
+        
+        /* Encryption process */
+        step1:
+        {
+            /* Encrypt the plaintext with the symmetric key */
+            encrypt(plaintext, key, ciphertext);
+            
+            /* Send the ciphertext to the server */
+            send_1(Client, Server, ciphertext);
+        }
+    }
+
+    /* Server role */
+    role Server
+    {
+        /* Declare variables */
+        var 
+            key : SymmetricKey;   /* Symmetric key for AES */
+            plaintext : Text;      /* Plaintext message */
+            ciphertext : Text;     /* Ciphertext after decryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Assume the server has the same symmetric key */
+            key := new();
+        }
+        
+        /* Decryption process */
+        step1:
+        {
+            /* Receive the ciphertext from the client */
+            recv_1(Client, Server, ciphertext);
+            
+            /* Decrypt the ciphertext with the symmetric key */
+            decrypt(ciphertext, key, plaintext);
+        }
+    }
+}
+
+/* Security claims */
+
+/* Client claims the plaintext should remain secret */
+claim(Client, Secret, plaintext);
+
+/* Server claims the plaintext should remain secret */
+claim(Server, Secret, plaintext);
+
+/* End of the protocol */
+end protocol;

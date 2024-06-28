@@ -1,0 +1,99 @@
+/* Scyther script for modeling AES with ECC key exchange */
+
+/* Define the protocol roles */
+protocol AESECCProtocol
+{
+    /* Client role */
+    role Client
+    {
+        /* Declare variables */
+        var 
+            skC : PrivateKey;     /* Client's ECC private key */
+            pkC : PublicKey;      /* Client's ECC public key */
+            pkS : PublicKey;      /* Server's ECC public key */
+            sharedKey : SymmetricKey; /* Shared symmetric key derived from ECC */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Text;    /* Ciphertext after encryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate client's ECC key pair */
+            skC := new();
+            pkC := inverse(skC);  /* Public key is the inverse of the private key */
+
+            /* Generate plaintext */
+            plaintext := new();
+        }
+        
+        /* Key exchange and encryption process */
+        step1:
+        {
+            /* Send client's public key to the server */
+            send_1(Client, Server, pkC);
+            
+            /* Receive server's public key */
+            recv_2(Server, Client, pkS);
+            
+            /* Derive shared symmetric key using ECC */
+            sharedKey := pkS ^ skC;  /* ECC key derivation */
+            
+            /* Encrypt the plaintext with the shared symmetric key */
+            encrypt(plaintext, sharedKey, ciphertext);
+            
+            /* Send the ciphertext to the server */
+            send_3(Client, Server, ciphertext);
+        }
+    }
+
+    /* Server role */
+    role Server
+    {
+        /* Declare variables */
+        var 
+            skS : PrivateKey;     /* Server's ECC private key */
+            pkS : PublicKey;      /* Server's ECC public key */
+            pkC : PublicKey;      /* Client's ECC public key */
+            sharedKey : SymmetricKey; /* Shared symmetric key derived from ECC */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Text;    /* Ciphertext after decryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate server's ECC key pair */
+            skS := new();
+            pkS := inverse(skS);  /* Public key is the inverse of the private key */
+        }
+        
+        /* Key exchange and decryption process */
+        step1:
+        {
+            /* Receive client's public key */
+            recv_1(Client, Server, pkC);
+            
+            /* Send server's public key to the client */
+            send_2(Server, Client, pkS);
+            
+            /* Derive shared symmetric key using ECC */
+            sharedKey := pkC ^ skS;  /* ECC key derivation */
+            
+            /* Receive the ciphertext from the client */
+            recv_3(Client, Server, ciphertext);
+            
+            /* Decrypt the ciphertext with the shared symmetric key */
+            decrypt(ciphertext, sharedKey, plaintext);
+        }
+    }
+}
+
+/* Security claims */
+
+/* Client claims the plaintext should remain secret */
+claim(Client, Secret, plaintext);
+
+/* Server claims the plaintext should remain secret */
+claim(Server, Secret, plaintext);
+
+/* End of the protocol */
+end protocol;

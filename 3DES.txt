@@ -1,0 +1,83 @@
+/* Scyther script for modeling 3DES encryption */
+
+/* Define the protocol roles */
+protocol TripleDESProtocol
+{
+    /* Client role */
+    role Client
+    {
+        /* Declare variables */
+        var 
+            key1 : SymmetricKey;  /* First symmetric key for 3DES */
+            key2 : SymmetricKey;  /* Second symmetric key for 3DES */
+            key3 : SymmetricKey;  /* Third symmetric key for 3DES */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Text;    /* Ciphertext after encryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate new symmetric keys and plaintext */
+            key1 := new();
+            key2 := new();
+            key3 := new();
+            plaintext := new();
+        }
+        
+        /* Encryption process */
+        step1:
+        {
+            /* Encrypt the plaintext with the three symmetric keys (3DES) */
+            encrypt(plaintext, key1, ciphertext);
+            encrypt(ciphertext, key2, ciphertext);
+            encrypt(ciphertext, key3, ciphertext);
+            
+            /* Send the ciphertext to the server */
+            send_1(Client, Server, ciphertext);
+        }
+    }
+
+    /* Server role */
+    role Server
+    {
+        /* Declare variables */
+        var 
+            key1 : SymmetricKey;  /* First symmetric key for 3DES */
+            key2 : SymmetricKey;  /* Second symmetric key for 3DES */
+            key3 : SymmetricKey;  /* Third symmetric key for 3DES */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Text;    /* Ciphertext after decryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Assume the server has the same symmetric keys */
+            key1 := new();
+            key2 := new();
+            key3 := new();
+        }
+        
+        /* Decryption process */
+        step1:
+        {
+            /* Receive the ciphertext from the client */
+            recv_1(Client, Server, ciphertext);
+            
+            /* Decrypt the ciphertext with the three symmetric keys (3DES) */
+            decrypt(ciphertext, key3, ciphertext);
+            decrypt(ciphertext, key2, ciphertext);
+            decrypt(ciphertext, key1, plaintext);
+        }
+    }
+}
+
+/* Security claims */
+
+/* Client claims the plaintext should remain secret */
+claim(Client, Secret, plaintext);
+
+/* Server claims the plaintext should remain secret */
+claim(Server, Secret, plaintext);
+
+/* End of the protocol */
+end protocol;

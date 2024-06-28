@@ -1,0 +1,91 @@
+/* Scyther script for modeling RSA encryption */
+
+/* Define the protocol roles */
+protocol RSAProtocol
+{
+    /* Client role */
+    role Client
+    {
+        /* Declare variables */
+        var 
+            skC : PrivateKey;     /* Client's RSA private key */
+            pkC : PublicKey;      /* Client's RSA public key */
+            pkS : PublicKey;      /* Server's RSA public key */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Message; /* Ciphertext after encryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate client's RSA key pair */
+            skC := new();
+            pkC := inverse(skC);  /* Public key is the inverse of the private key */
+
+            /* Generate plaintext */
+            plaintext := new();
+        }
+        
+        /* Encryption process */
+        step1:
+        {
+            /* Send client's public key to the server */
+            send_1(Client, Server, pkC);
+            
+            /* Receive server's public key */
+            recv_2(Server, Client, pkS);
+            
+            /* Encrypt the plaintext with the server's public key */
+            ciphertext := pkS(plaintext);  /* RSA encryption */
+            
+            /* Send the ciphertext to the server */
+            send_3(Client, Server, ciphertext);
+        }
+    }
+
+    /* Server role */
+    role Server
+    {
+        /* Declare variables */
+        var 
+            skS : PrivateKey;     /* Server's RSA private key */
+            pkS : PublicKey;      /* Server's RSA public key */
+            pkC : PublicKey;      /* Client's RSA public key */
+            plaintext : Text;     /* Plaintext message */
+            ciphertext : Message; /* Ciphertext after decryption */
+        
+        /* Initial setup */
+        init
+        {
+            /* Generate server's RSA key pair */
+            skS := new();
+            pkS := inverse(skS);  /* Public key is the inverse of the private key */
+        }
+        
+        /* Decryption process */
+        step1:
+        {
+            /* Receive client's public key */
+            recv_1(Client, Server, pkC);
+            
+            /* Send server's public key to the client */
+            send_2(Server, Client, pkS);
+            
+            /* Receive the ciphertext from the client */
+            recv_3(Client, Server, ciphertext);
+            
+            /* Decrypt the ciphertext with the server's private key */
+            plaintext := skS(ciphertext);  /* RSA decryption */
+        }
+    }
+}
+
+/* Security claims */
+
+/* Client claims the plaintext should remain secret */
+claim(Client, Secret, plaintext);
+
+/* Server claims the plaintext should remain secret */
+claim(Server, Secret, plaintext);
+
+/* End of the protocol */
+end protocol;
